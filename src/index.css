@@ -1,0 +1,49 @@
+@import "tailwindcss";
+
+:root {
+  --brand-50: #ecfdf5;
+  --brand-100: #d1fae5;
+  --brand-200: #a7f3d0;
+  --brand-300: #6ee7b7;
+  --brand-400: #34d399;
+  --brand-500: #10b981; /* emerald */
+  --brand-600: #059669;
+  --brand-700: #047857;
+  --brand-800: #065f46;
+  --brand-900: #064e3b;
+}
+
+/* Modern font */
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 400 800;
+  font-display: swap;
+  src: url('https://fonts.gstatic.com/s/manrope/v15/xn7gYHE41ni1AdIRggexSg.woff2') format('woff2');
+}
+
+html, body, #root {
+  height: 100%;
+}
+
+body {
+  font-family: Manrope, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+  background-color: #f7fdf9;
+  color: #0f172a;
+}
+
+/* Utility helpers overriding default brand color feel */
+.btn-primary {
+  @apply bg-emerald-700 hover:bg-emerald-600 text-white font-semibold rounded-lg px-4 py-2 transition-colors;
+}
+.btn-outline {
+  @apply border border-emerald-700 text-emerald-800 hover:bg-emerald-50 font-semibold rounded-lg px-4 py-2 transition-colors;
+}
+
+.card {
+  @apply bg-white rounded-xl shadow-md;
+}
+
+.badge-brand {
+  @apply inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-emerald-100 text-emerald-800;
+}

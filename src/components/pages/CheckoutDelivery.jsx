@@ -1,0 +1,269 @@
+import React, { useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
+import { ArrowLeft, Truck, Clock, Shield, CheckCircle } from 'lucide-react'
+import { useCart } from '../../contexts/CartContext'
+
+function CheckoutDelivery() {
+  const navigate = useNavigate()
+  const { items: cartItems, getCartTotal, getCartSavings } = useCart()
+  const [selectedDelivery, setSelectedDelivery] = useState('standard')
+  const [deliveryInstructions, setDeliveryInstructions] = useState('')
+
+  const deliveryOptions = [
+    {
+      id: 'standard',
+      name: 'Standard Delivery',
+      description: '5-7 business days',
+      price: 0,
+      icon: <Truck className="w-6 h-6" />,
+      popular: false
+    },
+    {
+      id: 'express',
+      name: 'Express Delivery',
+      description: '2-3 business days',
+      price: 99,
+      icon: <Clock className="w-6 h-6" />,
+      popular: true
+    },
+    {
+      id: 'premium',
+      name: 'Premium Delivery',
+      description: '1-2 business days',
+      price: 199,
+      icon: <Shield className="w-6 h-6" />,
+      popular: false
+    }
+  ]
+
+  const handleContinue = () => {
+    const deliveryData = {
+      selectedDelivery,
+      deliveryInstructions,
+      deliveryPrice: deliveryOptions.find(opt => opt.id === selectedDelivery)?.price || 0
+    }
+    localStorage.setItem('deliveryInfo', JSON.stringify(deliveryData))
+    navigate('/checkout/payment')
+  }
+
+  if (cartItems.length === 0) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">Your cart is empty</h1>
+          <p className="text-gray-600 mb-8">Please add items to your cart before checkout.</p>
+          <Link
+            to="/shop"
+            className="bg-green-800 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors"
+          >
+            Continue Shopping
+          </Link>
+        </div>
+      </div>
+    )
+  }
+
+  const selectedDeliveryOption = deliveryOptions.find(opt => opt.id === selectedDelivery)
+  const deliveryPrice = selectedDeliveryOption?.price || 0
+  const finalTotal = getCartTotal() + deliveryPrice
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Header */}
+        <div className="flex items-center mb-8">
+          <Link
+            to="/checkout/address"
+            className="flex items-center text-gray-600 hover:text-green-800 transition-colors mr-4"
+          >
+            <ArrowLeft size={20} className="mr-2" />
+            Back to Address
+          </Link>
+          <h1 className="text-3xl font-bold text-gray-900">Delivery Options</h1>
+        </div>
+
+        {/* Progress Steps */}
+        <div className="mb-8">
+          <div className="flex items-center justify-center space-x-4">
+            <div className="flex items-center">
+              <div className="w-8 h-8 bg-green-800 text-white rounded-full flex items-center justify-center text-sm font-semibold">
+                1
+              </div>
+              <span className="ml-2 text-sm font-medium text-gray-600">Address</span>
+            </div>
+            <div className="w-16 h-1 bg-green-800"></div>
+            <div className="flex items-center">
+              <div className="w-8 h-8 bg-green-800 text-white rounded-full flex items-center justify-center text-sm font-semibold">
+                2
+              </div>
+              <span className="ml-2 text-sm font-medium text-green-800">Delivery</span>
+            </div>
+            <div className="w-16 h-1 bg-gray-300"></div>
+            <div className="flex items-center">
+              <div className="w-8 h-8 bg-gray-300 text-gray-600 rounded-full flex items-center justify-center text-sm font-semibold">
+                3
+              </div>
+              <span className="ml-2 text-sm font-medium text-gray-600">Payment</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Delivery Options */}
+          <div className="lg:col-span-2">
+            <div className="bg-white rounded-lg shadow-md p-6">
+              <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center">
+                <Truck className="w-6 h-6 mr-2 text-green-800" />
+                Choose Delivery Option
+              </h2>
+
+              <div className="space-y-4 mb-8">
+                {deliveryOptions.map((option) => (
+                  <div
+                    key={option.id}
+                    className={`border-2 rounded-lg p-4 cursor-pointer transition-all ${
+                      selectedDelivery === option.id
+                        ? 'border-green-800 bg-green-50'
+                        : 'border-gray-200 hover:border-gray-300'
+                    }`}
+                    onClick={() => setSelectedDelivery(option.id)}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-4">
+                        <div className={`p-2 rounded-lg ${
+                          selectedDelivery === option.id ? 'bg-green-800 text-white' : 'bg-gray-100 text-gray-600'
+                        }`}>
+                          {option.icon}
+                        </div>
+                        <div>
+                          <div className="flex items-center space-x-2">
+                            <h3 className="font-semibold text-gray-900">{option.name}</h3>
+                            {option.popular && (
+                              <span className="bg-green-800 text-white text-xs px-2 py-1 rounded-full">
+                                Popular
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-gray-600">{option.description}</p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-lg font-bold text-gray-900">
+                          {option.price === 0 ? 'FREE' : `₹${option.price}`}
+                        </div>
+                        {selectedDelivery === option.id && (
+                          <CheckCircle className="w-5 h-5 text-green-800 ml-auto mt-1" />
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Delivery Instructions */}
+              <div className="mb-8">
+                <label htmlFor="instructions" className="block text-sm font-medium text-gray-700 mb-2">
+                  Delivery Instructions (Optional)
+                </label>
+                <textarea
+                  id="instructions"
+                  value={deliveryInstructions}
+                  onChange={(e) => setDeliveryInstructions(e.target.value)}
+                  rows={3}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  placeholder="Any special instructions for delivery..."
+                />
+              </div>
+
+              {/* Delivery Info */}
+              <div className="bg-blue-50 p-4 rounded-lg">
+                <h3 className="font-semibold text-blue-900 mb-2">Delivery Information</h3>
+                <ul className="text-sm text-blue-800 space-y-1">
+                  <li>• We deliver to all major cities across India</li>
+                  <li>• Orders are processed within 24 hours</li>
+                  <li>• You will receive SMS updates about your order</li>
+                  <li>• Free returns within 30 days</li>
+                </ul>
+              </div>
+
+              <button
+                onClick={handleContinue}
+                className="w-full bg-green-800 text-white py-3 px-6 rounded-lg font-semibold hover:bg-green-700 transition-colors mt-6"
+              >
+                Continue to Payment
+              </button>
+            </div>
+          </div>
+
+          {/* Order Summary */}
+          <div className="lg:col-span-1">
+            <div className="bg-white rounded-lg shadow-md sticky top-4">
+              <div className="p-6">
+                <h2 className="text-xl font-semibold text-gray-900 mb-6">Order Summary</h2>
+                
+                {/* Cart Items */}
+                <div className="space-y-4 mb-6">
+                  {cartItems.map((item) => (
+                    <div key={`${item.id}-${item.size}`} className="flex items-center space-x-3">
+                      <div className="w-12 h-12 bg-gray-200 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <div className="text-gray-400 text-xs text-center">
+                          <div className="font-medium">{item.name}</div>
+                        </div>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h4 className="font-medium text-gray-900 truncate">{item.name}</h4>
+                        <p className="text-sm text-gray-600">{item.size}</p>
+                        <p className="text-sm font-semibold text-green-800">
+                          ₹{item.price} × {item.quantity}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="space-y-4">
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Subtotal:</span>
+                    <span className="font-medium">₹{getCartTotal()}</span>
+                  </div>
+                  
+                  <div className="flex justify-between text-green-600">
+                    <span>You Save:</span>
+                    <span className="font-medium">₹{getCartSavings()}</span>
+                  </div>
+                  
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Delivery:</span>
+                    <span className="font-medium">
+                      {deliveryPrice === 0 ? (
+                        <span className="text-green-600">FREE</span>
+                      ) : (
+                        `₹${deliveryPrice}`
+                      )}
+                    </span>
+                  </div>
+                  
+                  <div className="border-t border-gray-200 pt-4">
+                    <div className="flex justify-between text-lg font-bold">
+                      <span>Total:</span>
+                      <span>₹{finalTotal}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Delivery Details */}
+                <div className="mt-6 p-4 bg-gray-50 rounded-lg">
+                  <h3 className="font-semibold text-gray-900 mb-2">Selected Delivery</h3>
+                  <p className="text-sm text-gray-600">{selectedDeliveryOption?.name}</p>
+                  <p className="text-sm text-gray-600">{selectedDeliveryOption?.description}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+export default CheckoutDelivery
