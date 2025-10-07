@@ -1,6 +1,6 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { ArrowLeft, Truck, Clock, Shield, CheckCircle } from 'lucide-react'
+import { ArrowLeft, Truck, Clock, Shield, CheckCircle, ExternalLink, Share2, Copy } from 'lucide-react'
 import { useCart } from '../../contexts/CartContext'
 
 function CheckoutDelivery() {
@@ -8,6 +8,17 @@ function CheckoutDelivery() {
   const { items: cartItems, getCartTotal, getCartSavings } = useCart()
   const [selectedDelivery, setSelectedDelivery] = useState('standard')
   const [deliveryInstructions, setDeliveryInstructions] = useState('')
+  const [shippingAddress, setShippingAddress] = useState(null)
+
+  const PAYMENT_PAGE_URL = import.meta.env.VITE_RZP_PAYMENT_PAGE_URL || ''
+  const CREATE_LINK_ENDPOINT = import.meta.env.VITE_CREATE_LINK_ENDPOINT || '/api/razorpay/create-link'
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('shippingAddress')
+      if (saved) setShippingAddress(JSON.parse(saved))
+    } catch {}
+  }, [])
 
   const deliveryOptions = [
     {
@@ -43,7 +54,18 @@ function CheckoutDelivery() {
       deliveryPrice: deliveryOptions.find(opt => opt.id === selectedDelivery)?.price || 0
     }
     localStorage.setItem('deliveryInfo', JSON.stringify(deliveryData))
-    navigate('/checkout/payment')
+    // Auto-send payment link via Email/WhatsApp and open page in new tab
+    // Prefer API-generated link to leverage Razorpay email/SMS notifications without opening apps
+    if (!PAYMENT_PAGE_URL) {
+      createPaymentLink(true)
+      return
+    }
+    // If a Payment Page URL is configured (no API), just open it for the user (no external apps)
+    const url = buildPaymentLink()
+    if (url) {
+      window.open(url, '_blank')
+      alert('Payment link opened. Razorpay will also notify via email/SMS if enabled in your account settings.')
+    }
   }
 
   if (cartItems.length === 0) {
@@ -66,6 +88,79 @@ function CheckoutDelivery() {
   const selectedDeliveryOption = deliveryOptions.find(opt => opt.id === selectedDelivery)
   const deliveryPrice = selectedDeliveryOption?.price || 0
   const finalTotal = getCartTotal() + deliveryPrice
+
+  const buildPaymentLink = () => {
+    if (!PAYMENT_PAGE_URL) return ''
+    const params = new URLSearchParams()
+    if (shippingAddress?.email) params.set('prefill[email]', shippingAddress.email)
+    if (shippingAddress?.phone) params.set('prefill[contact]', shippingAddress.phone)
+    if (shippingAddress?.firstName || shippingAddress?.lastName) params.set('prefill[name]', `${shippingAddress.firstName || ''} ${shippingAddress.lastName || ''}`.trim())
+    params.set('amount', String(Math.max(1, Math.round(finalTotal))))
+    return PAYMENT_PAGE_URL.includes('?') ? `${PAYMENT_PAGE_URL}&${params.toString()}` : `${PAYMENT_PAGE_URL}?${params.toString()}`
+  }
+
+  const openLink = () => {
+    if (PAYMENT_PAGE_URL) {
+      const url = buildPaymentLink()
+      if (!url) { alert('Payment Page URL not configured. Set VITE_RZP_PAYMENT_PAGE_URL'); return }
+      window.open(url, '_blank')
+      return
+    }
+    // Fallback: use API-generated payment link
+    createPaymentLink()
+  }
+
+  const emailLink = () => {
+    const url = lastLink || buildPaymentLink()
+    if (!url) return
+    const to = shippingAddress?.email || ''
+    const subject = encodeURIComponent('Complete your payment - The Powder Legacy')
+    const body = encodeURIComponent(`Hello ${shippingAddress?.firstName || ''},\n\nPlease complete your payment for order total ₹${finalTotal}.\nPayment link: ${url}\n\nThank you!`)
+    window.location.href = `mailto:${to}?subject=${subject}&body=${body}`
+  }
+
+  const whatsappLink = () => {
+    const url = lastLink || buildPaymentLink()
+    if (!url) return
+    const phone = (shippingAddress?.phone || '').replace(/\D/g, '')
+    const text = encodeURIComponent(`Payment link for The Powder Legacy (₹${finalTotal}): ${url}`)
+    const api = phone ? `https://api.whatsapp.com/send?phone=91${phone}&text=${text}` : `https://api.whatsapp.com/send?text=${text}`
+    window.open(api, '_blank')
+  }
+
+  const copyLink = async () => {
+    const url = lastLink || buildPaymentLink()
+    if (!url) return
+  const [lastLink, setLastLink] = useState('')
+
+  async function createPaymentLink(silent = false) {
+    try {
+      const r = await fetch(CREATE_LINK_ENDPOINT, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          amount: finalTotal,
+          name: `${shippingAddress?.firstName || ''} ${shippingAddress?.lastName || ''}`.trim(),
+          email: shippingAddress?.email,
+          phone: shippingAddress?.phone,
+          description: 'Order Payment',
+          referenceId: `ref_${Date.now()}`
+        })
+      })
+      const data = await r.json()
+      if (!r.ok) throw new Error(data?.error || 'Failed to create link')
+      setLastLink(data.payment_link)
+      if (!silent) {
+        window.open(data.payment_link, '_blank')
+      } else {
+        alert('Payment link sent automatically via Razorpay email/SMS (if enabled).')
+      }
+    } catch (e) {
+      alert(e?.message || 'Failed to create payment link')
+    }
+  }
+    try { await navigator.clipboard.writeText(url); alert('Payment link copied'); } catch { alert(url) }
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -98,13 +193,7 @@ function CheckoutDelivery() {
               </div>
               <span className="ml-2 text-sm font-medium text-green-800">Delivery</span>
             </div>
-            <div className="w-16 h-1 bg-gray-300"></div>
-            <div className="flex items-center">
-              <div className="w-8 h-8 bg-gray-300 text-gray-600 rounded-full flex items-center justify-center text-sm font-semibold">
-                3
-              </div>
-              <span className="ml-2 text-sm font-medium text-gray-600">Payment</span>
-            </div>
+            {/* Payment step removed (link flow) */}
           </div>
         </div>
 
@@ -186,12 +275,32 @@ function CheckoutDelivery() {
                 </ul>
               </div>
 
-              <button
-                onClick={handleContinue}
-                className="w-full bg-green-800 text-white py-3 px-6 rounded-lg font-semibold hover:bg-green-700 transition-colors mt-6"
-              >
-                Continue to Payment
-              </button>
+              <div className="grid sm:grid-cols-2 gap-3 mt-6">
+                <button
+                  onClick={handleContinue}
+                  className="w-full bg-green-800 text-white py-3 px-6 rounded-lg font-semibold hover:bg-green-700 transition-colors"
+                >
+                  Continue to Payment
+                </button>
+                <button
+                  onClick={openLink}
+                  className="w-full border border-green-800 text-green-800 py-3 px-6 rounded-lg font-semibold hover:bg-green-50 transition-colors flex items-center justify-center"
+                >
+                  <ExternalLink className="w-4 h-4 mr-2" /> Send Payment Link
+                </button>
+              </div>
+
+              {PAYMENT_PAGE_URL && (
+                <div className="mt-4 p-4 bg-gray-50 rounded-lg">
+                  <div className="text-sm font-semibold text-gray-900 mb-2">Share payment link</div>
+                  <div className="flex gap-2">
+                    <button onClick={emailLink} className="px-3 py-2 border rounded-md text-sm">Email</button>
+                    <button onClick={whatsappLink} className="px-3 py-2 border rounded-md text-sm">WhatsApp</button>
+                    <button onClick={copyLink} className="px-3 py-2 border rounded-md text-sm flex items-center"><Copy className="w-4 h-4 mr-1" />Copy</button>
+                  </div>
+                  <div className="text-xs text-gray-500 mt-2">After payment, the customer is redirected to /payment/callback and the order will appear in Admin automatically.</div>
+                </div>
+              )}
             </div>
           </div>
 

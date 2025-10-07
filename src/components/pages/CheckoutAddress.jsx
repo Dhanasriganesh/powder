@@ -56,9 +56,9 @@ function CheckoutAddress() {
         }
       }
     } catch {}
-    // Store address data and navigate to payment
+    // Store address data and go to delivery (payment is link-based)
     localStorage.setItem('shippingAddress', JSON.stringify(formData))
-    navigate('/checkout/payment')
+    navigate('/checkout/delivery')
   }
 
   if (cartItems.length === 0) {
@@ -102,12 +102,12 @@ function CheckoutAddress() {
               </div>
               <span className="ml-2 text-sm font-medium text-green-800">Address</span>
             </div>
-            <div className="w-16 h-1 bg-gray-300"></div>
+            <div className="w-16 h-1 bg-green-800"></div>
             <div className="flex items-center">
-              <div className="w-8 h-8 bg-gray-300 text-gray-600 rounded-full flex items-center justify-center text-sm font-semibold">
+              <div className="w-8 h-8 bg-green-800 text-white rounded-full flex items-center justify-center text-sm font-semibold">
                 2
               </div>
-              <span className="ml-2 text-sm font-medium text-gray-600">Payment</span>
+              <span className="ml-2 text-sm font-medium text-green-800">Delivery</span>
             </div>
           </div>
         </div>

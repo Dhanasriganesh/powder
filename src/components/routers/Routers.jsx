@@ -7,7 +7,6 @@ import Cart from '../pages/Cart'
 import About from '../pages/About'
 import CheckoutAddress from '../pages/CheckoutAddress'
 import CheckoutDelivery from '../pages/CheckoutDelivery'
-import CheckoutPayment from '../pages/CheckoutPayment'
 import OrderSuccess from '../pages/OrderSuccess'
 import Login from '../pages/Login'
 import Signup from '../pages/Signup'
@@ -18,6 +17,7 @@ import Shipping from '../footer/Shipping'
 import { Routes, Route } from 'react-router-dom'
 import Account from '../pages/Account'
 import Admin from '../pages/Admin'
+import PaymentCallback from '../pages/PaymentCallback'
 
 function Routers() {
   return (
@@ -38,7 +38,8 @@ function Routers() {
             <Route path='/cart' element={<Cart />} />
             <Route path='/checkout/address' element={<CheckoutAddress />} />
             <Route path='/checkout/delivery' element={<CheckoutDelivery />} />
-            <Route path='/checkout/payment' element={<CheckoutPayment />} />
+            {/* Payment page removed; using payment link flow only */}
+            <Route path='/payment/callback' element={<PaymentCallback />} />
             <Route path='/order-success' element={<OrderSuccess />} />
             <Route path='/login' element={<Login />} />
             <Route path='/signup' element={<Signup />} />
